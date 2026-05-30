@@ -1,0 +1,26 @@
+paths:
+  raw_dir: training/data/raw
+  normalized_dir: training/data/normalized
+  deidentified_dir: training/data/deidentified
+  structured_dir: training/data/structured
+  labeled_dir: training/data/labeled
+  shards_dir: training/data/shards
+  export_dir: training/data/export
+  synthetic_dir: training/data/synthetic/v1
+
+splits:
+  train: 0.8
+  validation: 0.1
+  test: 0.1
+
+shard_seed: 42
+
+registry: training/datasets/registry.yaml
+
+schemas:
+  unified: training/schemas/unified_record.json
+  aegis_sft: training/schemas/aegis_sft_record.json
+
+deepseek:
+  export_path: training/data/export/deepseek_sft.jsonl
+  model: deepseek-chat

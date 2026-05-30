@@ -1,0 +1,4 @@
+# Optional dependencies for the AEGIS training pipeline scaffold.
+# Install: pip install -r training/requirements.txt
+pyyaml>=6.0
+tqdm>=4.66

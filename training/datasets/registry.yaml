@@ -1,0 +1,74 @@
+# AEGIS training dataset registry — see docs/AEGIS_TRAINING_BLUEPRINT.md
+
+datasets:
+  - name: MIMIC-III
+    source: MIT Laboratory for Computational Physiology
+    access_type: physionet_citi
+    url: https://physionet.org/content/mimiciii/
+    aegis_phase: 2
+    notes: Legacy ICU corpus; superseded by MIMIC-IV for new work. Requires CITI + PhysioNet credentialed access.
+
+  - name: MIMIC-IV
+    source: MIT Laboratory for Computational Physiology
+    access_type: physionet_citi
+    url: https://physionet.org/content/mimiciv/
+    aegis_phase: 2
+    notes: Structured ICU data for triage and severity reasoning. Requires CITI + PhysioNet credentialed access.
+
+  - name: MIMIC-IV-Note
+    source: MIT Laboratory for Computational Physiology
+    access_type: physionet_citi
+    url: https://physionet.org/content/mimic-iv-note/
+    aegis_phase: 1
+    notes: Clinical notes for summarization and reasoning. Requires CITI + PhysioNet credentialed access.
+
+  - name: eICU Collaborative Research Database
+    source: MIT Laboratory for Computational Physiology
+    access_type: physionet_citi
+    url: https://physionet.org/content/eicu-crd/
+    aegis_phase: 2
+    notes: Multi-center ICU patterns for risk stratification. Requires CITI + PhysioNet credentialed access.
+
+  - name: i2b2 Clinical NLP
+    source: Harvard / Partners Healthcare (n2c2)
+    access_type: i2b2_dua
+    url: https://portal.dbmi.hms.harvard.edu/projects/n2c2-nlp/
+    aegis_phase: 1
+    notes: Discharge summaries and NLP challenge corpora. Requires i2b2 Data Use Agreement.
+
+  - name: Stanford COVID-19 Clinical Notes
+    source: Stanford ML Group
+    access_type: open
+    url: https://stanfordmlgroup.github.io/competitions/clinical-notes/
+    aegis_phase: 1
+    notes: De-identified COVID encounter notes for symptom-to-reasoning patterns.
+
+  - name: PubMed Open Access Subset
+    source: NIH / NCBI
+    access_type: open
+    url: https://www.ncbi.nlm.nih.gov/pmc/tools/openftlist/
+    aegis_phase: 3
+    notes: Biomedical literature for guideline and knowledge grounding. FTP download available.
+
+  - name: MedDialog
+    source: Microsoft Research / UCSD-AI4H
+    access_type: open
+    url: https://github.com/UCSD-AI4H/Medical-Dialogue-System
+    aegis_phase: 1
+    notes: Doctor-patient dialogues for conversational medical reasoning.
+
+  - name: MedQA / MedMCQA / PubMedQA
+    source: Multiple (USMLE-style QA corpora)
+    access_type: open
+    url: https://github.com/jind11/MedQA
+    aegis_phase: 3
+    notes: >-
+      Structured medical QA for clinical logic. Additional URLs:
+      https://medmcqa.github.io/ and https://pubmedqa.github.io/
+
+  - name: MedNLI
+    source: MIT / PhysioNet
+    access_type: physionet_citi
+    url: https://physionet.org/content/mednli/
+    aegis_phase: 2
+    notes: Clinical natural language inference for reasoning consistency. Requires CITI + PhysioNet access.

@@ -1,0 +1,28 @@
+{
+  "patients": [
+    {
+      "patient_id": "mock-patient-001",
+      "age": 52,
+      "sex": "M",
+      "known_conditions_summary": "Type 2 diabetes, hypertension",
+      "medications_summary": "Metformin 500mg BID, Lisinopril 10mg daily",
+      "allergies_summary": "Penicillin — rash"
+    },
+    {
+      "patient_id": "mock-patient-002",
+      "age": 34,
+      "sex": "F",
+      "known_conditions_summary": "Asthma, seasonal allergies",
+      "medications_summary": "Salbutamol inhaler PRN",
+      "allergies_summary": "None documented"
+    },
+    {
+      "patient_id": "mock-patient-003",
+      "age": 67,
+      "sex": "F",
+      "known_conditions_summary": "Atrial fibrillation, osteoarthritis",
+      "medications_summary": "Apixaban 5mg BID, Paracetamol PRN",
+      "allergies_summary": "Sulfa drugs — hives"
+    }
+  ]
+}

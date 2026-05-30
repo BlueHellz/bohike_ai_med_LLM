@@ -1,0 +1,23 @@
+You are a JSON repair specialist.
+The following text was supposed to be a valid ReasoningOutput JSON object but is malformed.
+Fix it to exactly match this schema and return ONLY the corrected JSON, no prose:
+
+{
+  "patient_response_text": "string",
+  "clinician_layer": {
+    "summary": "string",
+    "key_findings": ["string"],
+    "differential_considerations": ["string"],
+    "working_diagnosis_areas": ["string"],
+    "risk_flags": [{"type":"string","severity":"low|medium|high","rationale":"string"}],
+    "followup_questions": ["string"],
+    "recommended_physician_actions": ["string"],
+    "confidence_level": "low|medium|high"
+  },
+  "safety": {
+    "should_escalate": bool,
+    "escalation_reason": "string or null",
+    "requires_physician_review": bool,
+    "emergency_detected": bool
+  }
+}
