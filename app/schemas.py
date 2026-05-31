@@ -63,6 +63,7 @@ class SafetyDecision(BaseModel):
     escalation_reason: Optional[str] = None
     requires_physician_review: bool
     emergency_detected: bool = False
+    off_topic_detected: bool = False
 
 
 class ReasoningOutput(BaseModel):

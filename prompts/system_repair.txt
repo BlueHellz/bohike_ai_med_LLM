@@ -18,6 +18,7 @@ Fix it to exactly match this schema and return ONLY the corrected JSON, no prose
     "should_escalate": bool,
     "escalation_reason": "string or null",
     "requires_physician_review": bool,
-    "emergency_detected": bool
+    "emergency_detected": bool,
+    "off_topic_detected": bool
   }
 }

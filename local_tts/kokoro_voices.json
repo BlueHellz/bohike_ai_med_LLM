@@ -1,0 +1,35 @@
+{
+  "default_voice_id": "af_sarah",
+  "voices": [
+    {
+      "id": "af_sarah",
+      "name": "Sarah (US female)",
+      "language": "en-US",
+      "description": "American English; clear default for dev playback."
+    },
+    {
+      "id": "af_bella",
+      "name": "Bella (US female)",
+      "language": "en-US",
+      "description": "American English; warm tone."
+    },
+    {
+      "id": "am_adam",
+      "name": "Adam (US male)",
+      "language": "en-US",
+      "description": "American English male voice."
+    },
+    {
+      "id": "bf_emma",
+      "name": "Emma (GB female)",
+      "language": "en-GB",
+      "description": "British English female voice."
+    },
+    {
+      "id": "bm_george",
+      "name": "George (GB male)",
+      "language": "en-GB",
+      "description": "British English male voice."
+    }
+  ]
+}

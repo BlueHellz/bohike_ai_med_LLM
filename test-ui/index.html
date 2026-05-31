@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>AEGIS — Temporary Test UI</title>
+  <title>Health consultation — dev</title>
   <style>
     :root {
       --banner-bg: #7c2d12;
@@ -26,6 +26,10 @@
       --badge-emergency: #dc2626;
       --badge-escalation: #ea580c;
       --badge-info: #0369a1;
+      --source-pill-bg: rgba(255, 243, 230, 0.14);
+      --source-pill-border: rgba(251, 146, 60, 0.42);
+      --source-pill-fg: #ffedd5;
+      --disclaimer: #f87171;
     }
     * { box-sizing: border-box; }
     html, body { height: 100%; }
@@ -170,15 +174,45 @@
       color: var(--muted);
       margin-right: 0.15rem;
     }
+    .source-chip,
+    .inline-source {
+      cursor: default;
+      pointer-events: none;
+      user-select: text;
+      background: var(--source-pill-bg);
+      color: var(--source-pill-fg);
+      border: 1px solid var(--source-pill-border);
+      box-decoration-break: clone;
+      -webkit-box-decoration-break: clone;
+    }
     .source-chip {
       display: inline-block;
-      padding: 0.12rem 0.5rem;
+      padding: 0.18rem 0.55rem;
       border-radius: 999px;
       font-size: 0.72rem;
       font-weight: 500;
-      background: rgba(56, 189, 248, 0.12);
-      color: #7dd3fc;
-      border: 1px solid rgba(56, 189, 248, 0.25);
+      line-height: 1.25;
+    }
+    .inline-source {
+      display: inline;
+      padding: 0.12em 0.45em;
+      border-radius: 999px;
+      font-size: 0.9em;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    .disclaimer-footer {
+      margin-top: 1rem;
+      padding-top: 0.65rem;
+      border-top: 1px solid rgba(248, 113, 113, 0.22);
+      color: var(--disclaimer);
+      font-size: 0.92rem;
+      line-height: 1.45;
+    }
+    .disclaimer-footer + .disclaimer-footer {
+      margin-top: 0.55rem;
+      padding-top: 0;
+      border-top: none;
     }
     .typing {
       display: inline-flex;
@@ -354,8 +388,8 @@
 
   <div class="app">
     <header class="chat-header">
-      <h1>Health assistant</h1>
-      <p>Ask a question like you would in a messaging app.</p>
+      <h1>Health consultation</h1>
+      <p>Describe your symptoms or concerns — we'll guide you step by step.</p>
     </header>
 
     <div id="chat-messages" aria-live="polite">
@@ -371,13 +405,19 @@
       </div>
       <div class="composer-meta" id="composer-meta"></div>
       <div class="tts-row">
+        <label for="engine-select">Engine</label>
+        <select id="engine-select" aria-label="TTS engine">
+          <option value="">Loading…</option>
+        </select>
+      </div>
+      <div class="tts-row">
         <label for="voice-select">Voice</label>
         <select id="voice-select" aria-label="TTS voice">
           <option value="">Loading voices…</option>
         </select>
       </div>
       <p class="tts-hint" id="tts-hint">
-        Checking local Piper TTS…
+        Checking local TTS…
       </p>
       <p class="tts-hint" id="voice-latency-hint" style="margin-top:0.25rem;color:var(--accent);font-size:0.78rem;">
         Voice mode: faster replies (summary deferred).
@@ -418,6 +458,7 @@
       const btnTts = document.getElementById("btn-tts");
       const composerMeta = document.getElementById("composer-meta");
       const voiceSelect = document.getElementById("voice-select");
+      const engineSelect = document.getElementById("engine-select");
       const ttsHint = document.getElementById("tts-hint");
       const showTechnical = document.getElementById("show-technical");
       const technicalDetails = document.getElementById("technical-details");
@@ -430,25 +471,44 @@
       let streamingAiRow = null;
       const TTS_MAX_SENTENCES = 6;
 
+      const EMERGENCY_DISCLAIMER =
+        "If you believe this is a medical emergency, call emergency services " +
+        "(911, 999, 112, or your local number) immediately. " +
+        "Do not wait for further advice.";
+      const STANDARD_DISCLAIMER =
+        "This information is not a substitute for professional medical advice. " +
+        "Please consult your doctor for a proper evaluation.";
+
+      function splitPatientDisplayText(text) {
+        let cleaned = (text || "").trim();
+        let emergency = null;
+        let standard = null;
+        if (cleaned.indexOf(EMERGENCY_DISCLAIMER) === 0) {
+          emergency = EMERGENCY_DISCLAIMER;
+          cleaned = cleaned.slice(EMERGENCY_DISCLAIMER.length).replace(/^\s+/, "");
+        }
+        const stdIdx = cleaned.indexOf(STANDARD_DISCLAIMER);
+        if (stdIdx !== -1) {
+          standard = STANDARD_DISCLAIMER;
+          cleaned = cleaned.slice(0, stdIdx).replace(/\s+$/, "");
+        }
+        return { body: cleaned, emergency: emergency, standard: standard };
+      }
+
       function stripForTts(text) {
-        let t = (text || "").trim();
-        const markers = [
-          "This information is not a substitute",
-          "If you believe this is a medical emergency",
-        ];
-        markers.forEach(function (m) {
-          const i = t.indexOf(m);
-          if (i !== -1) t = t.slice(0, i).trim();
-        });
+        const parts = splitPatientDisplayText(text);
+        let t = parts.body;
         const r = t.indexOf("References:");
         if (r !== -1) t = t.slice(0, r).trim();
         return t;
       }
-      const VOICE_USE_STREAM = true;
+      const USE_STREAM = true;
       let lastTechnical = null;
       let localTtsAvailable = false;
       let localTtsVoices = [];
       let selectedVoiceId = null;
+      let selectedEngine = "piper";
+      let ttsEngines = [];
       let currentAudio = null;
 
       const PIPER_VOICE_CATALOG = [
@@ -470,6 +530,14 @@
           language: "en-GB",
           ready: false,
         },
+      ];
+      const DEFAULT_KOKORO_VOICE_ID = "af_sarah";
+      const KOKORO_VOICE_CATALOG = [
+        { id: "af_sarah", name: "Sarah (US female)", language: "en-US", ready: false },
+        { id: "af_bella", name: "Bella (US female)", language: "en-US", ready: false },
+        { id: "am_adam", name: "Adam (US male)", language: "en-US", ready: false },
+        { id: "bf_emma", name: "Emma (GB female)", language: "en-GB", ready: false },
+        { id: "bm_george", name: "George (GB male)", language: "en-GB", ready: false },
       ];
       const DEFAULT_PIPER_VOICE_ID = "en_US-lessac-medium";
 
@@ -501,6 +569,35 @@
             typeof data === "string" ? data : JSON.stringify(data, null, 2);
           technicalDetails.classList.add("visible");
         }
+      }
+
+      function formatPatientText(text) {
+        const escaped = escapeHtml(text || "");
+        return escaped.replace(
+          /\(Source:\s*([^)]+)\)/gi,
+          '<span class="inline-source">(Source: $1)</span>'
+        );
+      }
+
+      function formatPatientBubbleHtml(text, splitDisclaimers) {
+        if (!splitDisclaimers) {
+          return formatPatientText(text);
+        }
+        const parts = splitPatientDisplayText(text);
+        let html = formatPatientText(parts.body);
+        if (parts.emergency) {
+          html +=
+            '<div class="disclaimer-footer">' +
+            formatPatientText(parts.emergency) +
+            "</div>";
+        }
+        if (parts.standard) {
+          html +=
+            '<div class="disclaimer-footer">' +
+            formatPatientText(parts.standard) +
+            "</div>";
+        }
+        return html;
       }
 
       function sourceChips(citations) {
@@ -549,7 +646,7 @@
         const text = response.patient_response_text || "";
         lastAiText = text;
         const inner =
-          escapeHtml(text) +
+          formatPatientBubbleHtml(text, true) +
           sourceChips(response.citations) +
           hintBadges(response.ui_hints);
         if (streamingAiRow) {
@@ -595,7 +692,11 @@
       function updateStreamingAiBubble(partialText) {
         const row = ensureStreamingAiBubble();
         const bubble = row.querySelector(".bubble.ai");
-        if (bubble) bubble.textContent = partialText || "…";
+        if (bubble) {
+          bubble.innerHTML = partialText
+            ? formatPatientText(partialText)
+            : "…";
+        }
         scrollChatToBottom();
       }
 
@@ -651,7 +752,7 @@
       }
 
       function showTyping() {
-        showStatus("Thinking…");
+        showStatus("Reviewing what you shared…");
       }
 
       function removeTyping() {
@@ -664,25 +765,72 @@
         btnSend.disabled = on;
         btnNewSession.disabled = on;
         btnVoice.disabled = on || !recognition;
-        if (on && !listening) showStatus(statusLabel || "Thinking…");
+        if (on && !listening) showStatus(statusLabel || "Reviewing what you shared…");
         if (!on) removeTyping();
       }
 
       function updateTtsHint(mode, voiceName) {
         if (!ttsHint) return;
-        if (mode === "piper") {
+        if (mode === "kokoro") {
           ttsHint.textContent =
-            "Local Piper (not browser fallback): " +
-            (voiceName || selectedVoiceId || "en_US-lessac-medium") +
-            " — production: Kokoro-82M on-device.";
+            "Dev Kokoro-82M (local ONNX): " +
+            (voiceName || selectedVoiceId || DEFAULT_KOKORO_VOICE_ID) +
+            ". Higher quality than Piper; first run loads ~325 MB model.";
+        } else if (mode === "piper") {
+          ttsHint.textContent =
+            "Dev Piper (local ONNX fallback): " +
+            (voiceName || selectedVoiceId || DEFAULT_PIPER_VOICE_ID) +
+            ". Enable Kokoro via KOKORO_TTS_ENABLED + ./scripts/setup_kokoro_tts.sh.";
         } else if (mode === "browser") {
           ttsHint.textContent =
-            "Browser fallback" +
+            "Browser speechSynthesis fallback" +
             (voiceName ? ": " + voiceName : "") +
-            " — enable LOCAL_TTS_ENABLED and download Piper voices for natural playback.";
+            " — enable LOCAL_TTS_ENABLED and/or KOKORO_TTS_ENABLED in .env.";
         } else {
-          ttsHint.textContent = "Checking local Piper TTS…";
+          ttsHint.textContent = "Checking local TTS…";
         }
+      }
+
+      function fallbackCatalogForEngine(engine) {
+        return engine === "kokoro" ? KOKORO_VOICE_CATALOG : PIPER_VOICE_CATALOG;
+      }
+
+      function defaultVoiceForEngine(engine) {
+        return engine === "kokoro" ? DEFAULT_KOKORO_VOICE_ID : DEFAULT_PIPER_VOICE_ID;
+      }
+
+      function currentTtsMode() {
+        return localTtsAvailable ? selectedEngine : "browser";
+      }
+
+      function populateEngineSelect(engines, defaultEngine, preferredEngine) {
+        if (!engineSelect) return;
+        engineSelect.innerHTML = "";
+        if (!engines || !engines.length) {
+          const opt = document.createElement("option");
+          opt.value = "";
+          opt.textContent = "No local TTS enabled";
+          engineSelect.appendChild(opt);
+          engineSelect.disabled = true;
+          return;
+        }
+        engineSelect.disabled = false;
+        const want = preferredEngine || defaultEngine;
+        engines.forEach(function (e) {
+          const opt = document.createElement("option");
+          opt.value = e.id;
+          opt.textContent = e.label + (e.ready ? "" : " (not ready)");
+          opt.disabled = !e.ready;
+          if (e.id === want && e.ready) opt.selected = true;
+          engineSelect.appendChild(opt);
+        });
+        if (!engineSelect.value) {
+          const pick = engines.find(function (e) {
+            return e.ready;
+          });
+          if (pick) engineSelect.value = pick.id;
+        }
+        selectedEngine = engineSelect.value || "piper";
       }
 
       function selectedVoiceLabel() {
@@ -722,7 +870,7 @@
           composerMeta.textContent = "";
         }
         updateTtsHint(
-          localTtsAvailable ? "piper" : "browser",
+          localTtsAvailable ? selectedEngine : "browser",
           localTtsAvailable ? selectedVoiceLabel() : null
         );
       }
@@ -731,27 +879,54 @@
         if (!voiceSelect) return;
         updateTtsHint();
         localTtsAvailable = false;
+        if (engineSelect) {
+          engineSelect.innerHTML = '<option value="">Loading…</option>';
+        }
         voiceSelect.innerHTML = '<option value="">Loading voices…</option>';
         try {
-          const res = await fetch(apiBase() + "/local-tts/voices", {
+          const engRes = await fetch(apiBase() + "/local-tts/engines", {
             headers: { Accept: "application/json" },
           });
-          if (!res.ok) {
+          if (!engRes.ok) {
+            ttsEngines = [];
+            populateEngineSelect([], null);
             localTtsVoices = PIPER_VOICE_CATALOG.slice();
             populateVoiceSelect(localTtsVoices, DEFAULT_PIPER_VOICE_ID);
             if (composerMeta) {
               composerMeta.textContent =
-                "Local TTS API unavailable (enable LOCAL_TTS_ENABLED and restart server).";
+                "Local TTS unavailable (set LOCAL_TTS_ENABLED and/or KOKORO_TTS_ENABLED, restart server).";
+            }
+            return;
+          }
+          const engBody = await engRes.json();
+          ttsEngines = engBody.engines || [];
+          populateEngineSelect(ttsEngines, engBody.default_engine, selectedEngine);
+          const engine = engineSelect.value || selectedEngine || engBody.default_engine || "piper";
+          selectedEngine = engine;
+          const res = await fetch(
+            apiBase() + "/local-tts/voices?engine=" + encodeURIComponent(engine),
+            { headers: { Accept: "application/json" } }
+          );
+          if (!res.ok) {
+            localTtsVoices = fallbackCatalogForEngine(engine).slice();
+            populateVoiceSelect(localTtsVoices, defaultVoiceForEngine(engine));
+            if (composerMeta) {
+              composerMeta.textContent =
+                engine.charAt(0).toUpperCase() +
+                engine.slice(1) +
+                " TTS not ready — check setup script and restart server.";
             }
             return;
           }
           const body = await res.json();
-          localTtsVoices = body.voices || PIPER_VOICE_CATALOG.slice();
+          localTtsVoices = body.voices || fallbackCatalogForEngine(engine).slice();
           populateVoiceSelect(
             localTtsVoices,
-            body.default_voice_id || DEFAULT_PIPER_VOICE_ID
+            body.default_voice_id || defaultVoiceForEngine(engine)
           );
         } catch (_err) {
+          ttsEngines = [];
+          populateEngineSelect([], null);
           localTtsVoices = PIPER_VOICE_CATALOG.slice();
           populateVoiceSelect(localTtsVoices, DEFAULT_PIPER_VOICE_ID);
           if (composerMeta) {
@@ -761,9 +936,16 @@
         }
       }
 
+      if (engineSelect) {
+        engineSelect.addEventListener("change", function () {
+          selectedEngine = engineSelect.value || "piper";
+          loadLocalTtsVoices();
+        });
+      }
+
       voiceSelect.addEventListener("change", function () {
         selectedVoiceId = voiceSelect.value || null;
-        updateTtsHint(localTtsAvailable ? "piper" : "browser", selectedVoiceLabel());
+        updateTtsHint(currentTtsMode(), selectedVoiceLabel());
       });
 
       async function fetchLocalTtsBlob(text) {
@@ -773,6 +955,7 @@
           body: JSON.stringify({
             text: text,
             voice_id: selectedVoiceId || undefined,
+            engine: selectedEngine || undefined,
           }),
         });
         if (!res.ok) {
@@ -804,7 +987,7 @@
             URL.revokeObjectURL(url);
             reject(new Error("audio playback failed"));
           };
-          updateTtsHint("piper", selectedVoiceLabel());
+          updateTtsHint(currentTtsMode(), selectedVoiceLabel());
           currentAudio.play().catch(reject);
         });
       }
@@ -823,18 +1006,22 @@
           return;
         }
         if (composerMeta) {
+          const label = selectedEngine === "kokoro" ? "Kokoro" : "Piper";
           composerMeta.textContent =
-            "Generating natural voice (Piper) — may take 10–25s…";
+            "Generating voice (" + label + ") — may take 5–25s…";
         }
         try {
-          // Single synthesis pass; Piper inserts sentence pauses internally.
           const blob = await fetchLocalTtsBlob(spoken);
           await playAudioBlob(blob);
         } catch (err) {
           if (composerMeta) {
             composerMeta.textContent =
-              "Piper voice failed: " + (err.message || "error") +
-              ". Restart the server after ./scripts/setup_local_tts.sh";
+              (selectedEngine === "kokoro" ? "Kokoro" : "Piper") +
+              " voice failed: " +
+              (err.message || "error") +
+              ". Run ./scripts/setup_" +
+              (selectedEngine === "kokoro" ? "kokoro" : "local") +
+              "_tts.sh and restart the server.";
           }
           return;
         }
@@ -965,8 +1152,12 @@
           } catch (err) {
             if (composerMeta) {
               composerMeta.textContent =
-                "Piper voice failed: " + (err.message || "error") +
-                ". Restart the server after ./scripts/setup_local_tts.sh";
+                (selectedEngine === "kokoro" ? "Kokoro" : "Piper") +
+                " voice failed: " +
+                (err.message || "error") +
+                ". Run ./scripts/setup_" +
+                (selectedEngine === "kokoro" ? "kokoro" : "local") +
+                "_tts.sh and restart the server.";
             }
             return;
           }
@@ -1025,7 +1216,7 @@
           sessionId = body.session_id;
           sessionIdEl.textContent = sessionId;
           chatMessages.innerHTML = "";
-          appendSystemMessage("Conversation ready. How can we help you today?");
+          appendSystemMessage("What symptoms or health concerns would you like to discuss?");
         } catch (err) {
           sessionId = null;
           sessionIdEl.textContent = "—";
@@ -1114,17 +1305,18 @@
           appendUserMessage(trimmed);
         }
         messageInput.value = "";
-        if (ch === "voice") {
-          composerMeta.textContent =
-            "Voice mode: faster replies (summary deferred).";
+        if (USE_STREAM) {
+          composerMeta.textContent = "Streaming reply…";
+        } else if (ch === "voice") {
+          composerMeta.textContent = "Voice mode";
         } else {
           composerMeta.textContent = "";
         }
-        setBusy(true, ch === "voice" ? "Thinking…" : "Thinking…");
+        setBusy(true, "Reviewing what you shared…");
 
         try {
           let body;
-          if (ch === "voice" && VOICE_USE_STREAM) {
+          if (USE_STREAM) {
             body = await sendTurnStream(trimmed, ch);
           } else {
             body = await apiFetch(
@@ -1184,7 +1376,7 @@
           if (finalText) {
             const spoken = finalText.trim();
             appendUserMessage(spoken);
-            composerMeta.textContent = "Thinking…";
+            composerMeta.textContent = "Reviewing what you shared…";
             sendTurn(spoken, "voice", false);
           }
         };

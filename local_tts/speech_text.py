@@ -4,10 +4,7 @@ from __future__ import annotations
 
 import re
 
-_DISCLAIMER_STARTS = (
-    "This information is not a substitute",
-    "If you believe this is a medical emergency",
-)
+from local_tts.display_text import split_patient_display_text
 
 _SENTENCE_SPLIT = re.compile(r"(?<=[.!?])\s+")
 
@@ -18,14 +15,9 @@ def prepare_text_for_speech(text: str, max_sentences: int = 6, max_chars: int = 
 
     Disclaimers remain visible in the chat; they are omitted from spoken audio only.
     """
-    cleaned = (text or "").strip()
+    cleaned, _, _ = split_patient_display_text(text or "")
     if not cleaned:
         return ""
-
-    for marker in _DISCLAIMER_STARTS:
-        idx = cleaned.find(marker)
-        if idx != -1:
-            cleaned = cleaned[:idx].strip()
 
     ref_idx = cleaned.find("References:")
     if ref_idx != -1:

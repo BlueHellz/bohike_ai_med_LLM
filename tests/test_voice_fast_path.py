@@ -8,7 +8,7 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 
 from app.agents.reasoning import reset_llm_callers, set_llm_callers
-from app.agents.voice_config import should_defer_summary, voice_skip_summary_enabled
+from app.agents.voice_config import patient_defer_summary_enabled, should_defer_summary
 from app.main import app
 from tests.conftest import make_reasoning_json
 
@@ -30,11 +30,12 @@ async def client():
         yield ac
 
 
-def test_voice_skip_summary_defaults_true(monkeypatch):
+def test_patient_defer_summary_defaults_true(monkeypatch):
+    monkeypatch.delenv("PATIENT_DEFER_SUMMARY", raising=False)
     monkeypatch.delenv("VOICE_SKIP_SUMMARY", raising=False)
-    assert voice_skip_summary_enabled() is True
+    assert patient_defer_summary_enabled() is True
     assert should_defer_summary("voice") is True
-    assert should_defer_summary("text") is False
+    assert should_defer_summary("text") is True
 
 
 @pytest.mark.asyncio
@@ -83,7 +84,7 @@ async def test_voice_turn_returns_before_slow_summary(client, monkeypatch):
     text_elapsed = time.monotonic() - t0
 
     assert turn_text.status_code == 200
-    assert text_elapsed >= 2.5
+    assert text_elapsed < 2.0
 
 
 @pytest.mark.asyncio

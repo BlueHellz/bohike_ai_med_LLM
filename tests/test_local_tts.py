@@ -43,7 +43,7 @@ async def test_local_tts_speak_enabled_returns_wav(client, monkeypatch):
     monkeypatch.setenv("LOCAL_TTS_ENABLED", "true")
     fake_wav = b"RIFFfakeWAVdata"
 
-    with patch("app.api.local_tts_routes.synthesize", return_value=fake_wav):
+    with patch("app.api.local_tts_routes.piper_synthesize", return_value=fake_wav):
         r = await client.post(
             "/api/v1/local-tts/speak",
             json={"text": "Hello there", "voice_id": "en_US-lessac-medium"},
@@ -61,9 +61,57 @@ async def test_local_tts_voices_enabled_lists_catalog(client, monkeypatch):
     assert r.status_code == 200
     body = r.json()
     assert body["default_voice_id"] == "en_US-lessac-medium"
+    assert body["engine"] == "piper"
     ids = {v["id"] for v in body["voices"]}
     assert "en_US-lessac-medium" in ids
     assert "en_US-amy-low" in ids
+
+
+@pytest.mark.asyncio
+async def test_local_tts_engines_disabled_returns_503(client, monkeypatch):
+    monkeypatch.delenv("LOCAL_TTS_ENABLED", raising=False)
+    monkeypatch.delenv("KOKORO_TTS_ENABLED", raising=False)
+    r = await client.get("/api/v1/local-tts/engines")
+    assert r.status_code == 503
+
+
+@pytest.mark.asyncio
+async def test_local_tts_engines_lists_both(client, monkeypatch):
+    monkeypatch.setenv("LOCAL_TTS_ENABLED", "true")
+    monkeypatch.setenv("KOKORO_TTS_ENABLED", "true")
+    r = await client.get("/api/v1/local-tts/engines")
+    assert r.status_code == 200
+    body = r.json()
+    ids = {e["id"] for e in body["engines"]}
+    assert ids == {"piper", "kokoro"}
+
+
+@pytest.mark.asyncio
+async def test_local_tts_speak_kokoro_enabled_returns_wav(client, monkeypatch):
+    monkeypatch.setenv("KOKORO_TTS_ENABLED", "true")
+    fake_wav = b"RIFFfakeKokoroWAV"
+
+    with patch("app.api.local_tts_routes.kokoro_synthesize", return_value=fake_wav):
+        r = await client.post(
+            "/api/v1/local-tts/speak",
+            json={"text": "Hello there", "voice_id": "af_sarah", "engine": "kokoro"},
+        )
+
+    assert r.status_code == 200
+    assert r.headers["content-type"].startswith("audio/wav")
+    assert r.content == fake_wav
+
+
+@pytest.mark.asyncio
+async def test_local_tts_kokoro_voices_catalog(client, monkeypatch):
+    monkeypatch.setenv("KOKORO_TTS_ENABLED", "true")
+    r = await client.get("/api/v1/local-tts/voices?engine=kokoro")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["engine"] == "kokoro"
+    assert body["default_voice_id"] == "af_sarah"
+    ids = {v["id"] for v in body["voices"]}
+    assert "af_sarah" in ids
 
 
 def test_synthesize_empty_text_raises():

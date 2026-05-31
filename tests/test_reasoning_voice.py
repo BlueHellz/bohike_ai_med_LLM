@@ -8,7 +8,7 @@ from app.agents.reasoning import (
     run_reasoning,
     set_llm_callers,
 )
-from app.agents.voice_config import voice_reasoning_max_tokens
+from app.agents.voice_config import patient_reasoning_max_tokens, voice_reasoning_max_tokens
 from app.agents.session import create_session, load_context
 from app.schemas import ClinicalContext, PatientProfile, SessionMeta, Turn
 from tests.conftest import make_reasoning_json
@@ -84,4 +84,4 @@ async def test_run_reasoning_omits_voice_note_for_text_channel():
     )
 
     await run_reasoning(ctx, "triage", "deepseek")
-    assert captured[0] == 900
+    assert captured[0] == patient_reasoning_max_tokens("text")

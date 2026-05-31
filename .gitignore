@@ -12,5 +12,6 @@ training/data/
 voices/piper/*.onnx
 voices/piper/*.onnx.json
 voices/piper/*.part
+voices/kokoro/
 tools/piper/
 .venv312/

@@ -19,7 +19,7 @@ from app.agents.reasoning import (
     stream_deepseek,
 )
 from app.agents.routing import route
-from app.agents.safety import validate_and_enforce
+from app.agents.safety import build_session_context, validate_and_enforce
 from app.agents.session import (
     append_messages,
     append_physician_message,
@@ -101,6 +101,8 @@ async def _persist_turn(
         ui_hints["show_emergency_banner"] = True
     elif output.safety.should_escalate:
         ui_hints["show_escalation_banner"] = True
+    if output.safety.off_topic_detected:
+        ui_hints["off_topic_redirect"] = True
     if alerts:
         ui_hints["physician_notified"] = True
 
@@ -138,7 +140,13 @@ async def handle_turn(req: TurnRequest, db: AsyncSession) -> TurnResponse:
     raw_json, _used_claude = await run_reasoning(ctx, mode, model)
 
     repair_fn = lambda s, u: call_deepseek(s, u)
-    output = await validate_and_enforce(raw_json, repair_fn)
+    session_context = build_session_context(ctx.rolling_summary, ctx.recent_turns)
+    output = await validate_and_enforce(
+        raw_json,
+        repair_fn,
+        user_message=text,
+        session_context=session_context,
+    )
 
     return await _persist_turn(db, req, channel, ctx, text, output)
 
@@ -202,7 +210,13 @@ async def post_message_stream(
                 raw_json = "".join(parts)
 
             repair_fn = lambda s, u: call_deepseek(s, u)
-            output = await validate_and_enforce(raw_json, repair_fn)
+            session_context = build_session_context(ctx.rolling_summary, ctx.recent_turns)
+            output = await validate_and_enforce(
+                raw_json,
+                repair_fn,
+                user_message=text,
+                session_context=session_context,
+            )
             response = await _persist_turn(db, req, channel, ctx, text, output)
             yield f"data: {json.dumps({'type': 'done', 'response': response.model_dump()})}\n\n"
         except (LlmConfigurationError, LlmUpstreamError) as exc:

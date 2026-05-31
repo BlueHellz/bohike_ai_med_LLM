@@ -7,8 +7,11 @@ from collections.abc import AsyncIterator
 from pathlib import Path
 from typing import Callable, Optional
 
-from app.agents.voice_config import voice_patient_max_tokens, voice_reasoning_max_tokens
-from app.llm_errors import LlmConfigurationError, LlmUpstreamError
+from app.agents.voice_config import (
+    patient_reasoning_max_tokens,
+    patient_text_max_tokens,
+)
+from app.agents.safety import SOURCE_RESERVE_TOKENS
 from app.schemas import ClinicalContext, ReasoningOutput, SurgicalContext
 
 logger = logging.getLogger(__name__)
@@ -18,7 +21,9 @@ PROMPTS_DIR = Path(__file__).resolve().parents[2] / "prompts"
 DS_BASE = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
 DS_MODEL = os.getenv("DEEPSEEK_MODEL", "deepseek-chat")
 CL_MODEL = os.getenv("CLAUDE_MODEL", "claude-opus-4-5")
-P_MAX = int(os.getenv("PATIENT_RESPONSE_MAX_TOKENS", "200"))
+# P_MAX: patient_response_text token budget (prompt). Reasoning API max_tokens is separate
+# (PATIENT_REASONING_MAX_TOKENS / VOICE_REASONING_MAX_TOKENS) for the full JSON completion.
+P_MAX = int(os.getenv("PATIENT_RESPONSE_MAX_TOKENS", "150"))
 C_MAX = int(os.getenv("CLINICIAN_SUMMARY_MAX_TOKENS", "250"))
 SCHEMA = ReasoningOutput.model_json_schema()
 
@@ -192,21 +197,18 @@ def _build_system(mode, citation_depth="simple", *, patient_max: int | None = No
         mode=mode,
         citation_depth=citation_depth,
         patient_max=patient_max if patient_max is not None else P_MAX,
+        source_reserve=SOURCE_RESERVE_TOKENS,
         clinician_max=C_MAX,
         schema_json=json.dumps(SCHEMA, indent=2),
     )
 
 
 def _reasoning_max_tokens(channel: str) -> int:
-    if channel == "voice":
-        return voice_reasoning_max_tokens()
-    return 900
+    return patient_reasoning_max_tokens(channel)
 
 
 def _patient_max_for_channel(channel: str) -> int:
-    if channel == "voice":
-        return voice_patient_max_tokens()
-    return P_MAX
+    return patient_text_max_tokens(channel)
 
 
 def _validate_reasoning_json(raw: str) -> None:

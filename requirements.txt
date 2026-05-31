@@ -16,3 +16,4 @@ locust>=2.20
 python-dotenv>=1.0
 # Optional training pipeline deps: pip install -r training/requirements.txt  (pyyaml, tqdm)
 # Optional local Piper TTS (test-ui playback): pip install -r local_tts/requirements.txt
+# Optional Kokoro-82M dev TTS: pip install -r local_tts/kokoro_requirements.txt

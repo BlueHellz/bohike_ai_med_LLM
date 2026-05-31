@@ -45,6 +45,19 @@ async def lifespan(app: FastAPI):
             logger.info("Local Piper TTS warmed up")
         except Exception as exc:
             logger.warning("Local Piper TTS warmup skipped: %s", exc)
+    if os.getenv("KOKORO_TTS_ENABLED", "").strip().lower() in ("1", "true", "yes"):
+        try:
+            from local_tts.kokoro_synthesize import models_ready, synthesize as kokoro_synth
+
+            if models_ready():
+                kokoro_synth("Warm up.")
+                logger.info("Local Kokoro TTS warmed up")
+            else:
+                logger.warning(
+                    "Kokoro TTS enabled but model files missing — run ./scripts/setup_kokoro_tts.sh"
+                )
+        except Exception as exc:
+            logger.warning("Local Kokoro TTS warmup skipped: %s", exc)
     yield
 
 

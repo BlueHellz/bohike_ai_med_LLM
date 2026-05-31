@@ -46,11 +46,11 @@ See [local_tts/README.md](../local_tts/README.md) for voice list and troubleshoo
 - **Send**: `POST /api/v1/sessions/{session_id}/messages` with `channel: text`
 - **Voice**: browser `SpeechRecognition` → `POST .../messages/stream` (SSE) with `channel: voice`
   (summary deferred server-side; see `VOICE_SKIP_SUMMARY`)
-- **TTS**: voice replies auto-play with sentence-chained Piper (up to 2 parallel synth requests);
-  **Hear latest reply** plays WAV from `POST /api/v1/local-tts/speak` when Piper is
-  enabled and models are downloaded; voice picker lists `local_tts/voices.json` entries.
-  Falls back to improved browser `speechSynthesis` if local TTS is off or fails.
-  Production clients target **Kokoro-82M** on-device per `docs/VOICE_PIPELINE.md`.
+- **TTS**: voice replies auto-play via one Piper synthesis pass per reply (`POST /api/v1/local-tts/speak`);
+  **Hear latest reply** replays the same WAV path. Voice picker lists `local_tts/voices.json` entries.
+  Falls back to browser `speechSynthesis` if local TTS is off or fails (often more robotic).
+  Piper is dev-only quality — not ChatGPT parity; production target is **Kokoro-82M** on-device
+  (`docs/VOICE_PIPELINE.md` — sound quality section).
 - Chat view with optional technical details under Advanced settings (default off)
 
 ## Requirements

@@ -68,7 +68,7 @@ See [docs/SURGEON_INTEGRATION.md](docs/SURGEON_INTEGRATION.md) for surgeon tier 
 | `PATIENT_BACKEND_URL` | Future external patient service base URL |
 | `ROLLING_SUMMARY_MAX_TOKENS` | Rolling summary cap (default 300) |
 | `RECENT_TURNS_K` | Recent turns loaded per turn (default 5) |
-| `PATIENT_RESPONSE_MAX_TOKENS` | Patient response token budget |
+| `PATIENT_RESPONSE_MAX_TOKENS` | `patient_response_text` token budget (default 150) |
 | `CLINICIAN_SUMMARY_MAX_TOKENS` | Clinician layer token budget |
 | `MOCK_LLM` | Set `true` to require injected LLM callers (tests) |
 | `LOG_LEVEL` | Logging level (default INFO) |

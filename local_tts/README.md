@@ -93,4 +93,48 @@ from local_tts import synthesize
 wav_bytes = synthesize("Hello.", voice_id="en_US-lessac-medium")
 ```
 
-See `docs/VOICE_PIPELINE.md` for production on-device Kokoro guidance.
+See `docs/VOICE_PIPELINE.md` (including **Sound quality expectations**) for why Piper ≠ ChatGPT
+and for production on-device Kokoro guidance.
+
+## Optional: Kokoro-82M (test-ui, higher quality)
+
+Kokoro runs via **kokoro-onnx** (onnxruntime only — no torch). Works on Python 3.10–3.13 including
+Intel Mac when model assets and deps are installed.
+
+```bash
+chmod +x ./scripts/setup_kokoro_tts.sh
+./scripts/setup_kokoro_tts.sh
+```
+
+Downloads (~325 MB total, gitignored under `voices/kokoro/`):
+
+- `kokoro-v1.0.onnx`
+- `voices-v1.0.bin`
+
+Enable in `.env` (Piper can stay enabled as fallback):
+
+```bash
+KOKORO_TTS_ENABLED=true
+LOCAL_TTS_ENABLED=true
+# LOCAL_TTS_DEFAULT_ENGINE=kokoro
+```
+
+Python deps only (if not installed by setup script):
+
+```bash
+pip install -r local_tts/kokoro_requirements.txt
+```
+
+Test:
+
+```bash
+python3 -c "from local_tts.kokoro_synthesize import synthesize; print(len(synthesize('Hello')))"
+```
+
+HTTP: `GET /api/v1/local-tts/engines`, `GET /api/v1/local-tts/voices?engine=kokoro`,
+`POST /api/v1/local-tts/speak` with `{ "text", "voice_id?", "engine": "kokoro" }`.
+
+Catalog: `local_tts/kokoro_voices.json` (default `af_sarah`).
+
+If Kokoro import or synthesis fails on the host, test-ui shows an error and falls back to Piper
+(when enabled) or browser TTS.

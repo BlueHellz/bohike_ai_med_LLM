@@ -107,6 +107,7 @@ curl -s -X POST http://localhost:8000/api/v1/sessions/{session_id}/messages \
 - No `clinician_layer` in the response body (clinician data is stored server-side)
 - `session_id` echoed in the response
 - Live DeepSeek returns structured JSON internally; the API exposes only the safe patient layer
+- Default `PATIENT_RESPONSE_MAX_TOKENS=150` caps patient-visible prose; the model is prompted to finish inside that budget, and `validate_and_enforce` trims incomplete overflow at sentence boundaries
 
 If the key is missing or invalid, the turn fails at the LLM layer. Check server logs and `.env` configuration.
 
