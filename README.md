@@ -13,6 +13,8 @@ Clinician-grade AI medical consultation API (patient, physician oversight, surge
 
 ## Quick start
 
+**Intel Mac (local Piper):** use `./scripts/run_aegis_py312.sh` with `.venv312` — see [local_tts/README.md](local_tts/README.md).
+
 ```bash
 python -m venv .venv
 source .venv/bin/activate
@@ -25,6 +27,10 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 Full onboarding: [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md)
 
 Health: `GET /health`
+
+## Temporary test UI
+
+A minimal static page under `test-ui/` is mounted at `/test-ui/` for manual API verification (not for production). Enable with `TEST_UI_ENABLED=true` (default on). See [test-ui/README.md](test-ui/README.md). Example: **http://localhost:8001/test-ui/**
 
 ## DeepSeek-only quick start
 
@@ -107,7 +113,12 @@ Contract: [docs/PHYSICIAN_INTEGRATION.md](docs/PHYSICIAN_INTEGRATION.md)
 ## Voice client integration
 
 Speech runs on the client (Sherpa-ONNX STT → REST → Kokoro-82M TTS). The backend
-accepts transcribed text with `channel: "voice"`.
+accepts transcribed text with `channel: "voice"`. Local dev test-ui uses Piper
+(`en_US-lessac-medium`); **production on-device target is Kokoro-82M** (see
+[docs/VOICE_PIPELINE.md](docs/VOICE_PIPELINE.md)).
+
+Voice turns defer the rolling-summary LLM call when `VOICE_SKIP_SUMMARY=true` (default).
+Stream tokens via `POST /api/v1/sessions/{id}/messages/stream` (SSE).
 
 Details: [docs/VOICE_PIPELINE.md](docs/VOICE_PIPELINE.md)
 
@@ -123,6 +134,7 @@ Details: [docs/TRAINING_AND_QUALITY.md](docs/TRAINING_AND_QUALITY.md) · Fine-tu
 ### Sessions
 - `POST /api/v1/sessions` — create session
 - `POST /api/v1/sessions/{id}/messages` — consultation turn
+- `POST /api/v1/sessions/{id}/messages/stream` — consultation turn (SSE token stream)
 - `GET /api/v1/sessions/{id}/status` — session state
 - `POST /api/v1/sessions/{id}/close` — close session
 

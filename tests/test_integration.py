@@ -1,3 +1,5 @@
+"""Integration tests for consultation API endpoints and LLM wiring."""
+
 import json
 from unittest.mock import AsyncMock, patch
 
@@ -59,11 +61,45 @@ async def test_health(client):
     body = r.json()
     assert body["status"] == "ok"
     assert body["service"] == "aegis-medical-consultation-engine"
+    assert "deepseek_configured" in body
+    assert isinstance(body["deepseek_configured"], bool)
+
+
+@pytest.mark.asyncio
+async def test_citations_returned_in_turn_response(client):
+    async def mock_deepseek(_s, _u, max_tokens=900, **kwargs):
+        return make_reasoning_json(
+            "Hypertension is elevated blood pressure (Source: CDC — hypertension basics). "
+            "When did you last have it checked?",
+            source_citations=["CDC — hypertension basics"],
+        )
+
+    set_llm_callers(deepseek_fn=mock_deepseek, claude_fn=mock_deepseek)
+
+    r = await client.post(
+        "/api/v1/sessions",
+        json={"patient_id": "p-cite", "channel": "text", "citation_depth": "simple"},
+    )
+    sid = r.json()["session_id"]
+
+    with patch("app.api.routes.call_deepseek", new=mock_deepseek):
+        r = await client.post(
+            f"/api/v1/sessions/{sid}/messages",
+            json={
+                "session_id": sid,
+                "user_id": "p-cite",
+                "text": "What is hypertension?",
+            },
+        )
+    assert r.status_code == 200
+    body = r.json()
+    assert body["citations"] == ["CDC — hypertension basics"]
+    assert "CDC — hypertension basics" in body["patient_response_text"]
 
 
 @pytest.mark.asyncio
 async def test_turn_no_clinician_layer_in_response(client):
-    async def mock_deepseek(_s, _u, max_tokens=900):
+    async def mock_deepseek(_s, _u, max_tokens=900, **kwargs):
         return _education_response()
 
     set_llm_callers(deepseek_fn=mock_deepseek, claude_fn=mock_deepseek)
@@ -89,7 +125,7 @@ async def test_turn_no_clinician_layer_in_response(client):
 
 @pytest.mark.asyncio
 async def test_emergency_creates_alert(client, db_session):
-    async def mock_deepseek(_s, _u, max_tokens=900):
+    async def mock_deepseek(_s, _u, max_tokens=900, **kwargs):
         return _chest_pain_response()
 
     set_llm_callers(deepseek_fn=mock_deepseek, claude_fn=mock_deepseek)
@@ -118,7 +154,7 @@ async def test_emergency_creates_alert(client, db_session):
 
 @pytest.mark.asyncio
 async def test_malformed_llm_returns_safe_fallback(client):
-    async def bad_deepseek(_s, _u, max_tokens=900):
+    async def bad_deepseek(_s, _u, max_tokens=900, **kwargs):
         return "not valid json"
 
     set_llm_callers(deepseek_fn=bad_deepseek, claude_fn=bad_deepseek)
@@ -141,7 +177,7 @@ async def test_malformed_llm_returns_safe_fallback(client):
 
 @pytest.mark.asyncio
 async def test_physician_override_stored(client):
-    async def mock_deepseek(_s, _u, max_tokens=900):
+    async def mock_deepseek(_s, _u, max_tokens=900, **kwargs):
         return _headache_response()
 
     set_llm_callers(deepseek_fn=mock_deepseek, claude_fn=mock_deepseek)

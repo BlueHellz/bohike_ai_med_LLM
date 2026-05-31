@@ -1,0 +1,1279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AEGIS — Temporary Test UI</title>
+  <style>
+    :root {
+      --banner-bg: #7c2d12;
+      --banner-fg: #fff7ed;
+      --bg: #0b1220;
+      --surface: #111827;
+      --panel: #1e293b;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --user-bubble: #2563eb;
+      --user-text: #eff6ff;
+      --ai-bubble: #1e293b;
+      --ai-text: #f8fafc;
+      --accent: #38bdf8;
+      --error-bg: #450a0a;
+      --error-border: #f87171;
+      --error-text: #fecaca;
+      --ok: #4ade80;
+      --border: #334155;
+      --badge-emergency: #dc2626;
+      --badge-escalation: #ea580c;
+      --badge-info: #0369a1;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      display: flex;
+      flex-direction: column;
+    }
+    .banner {
+      background: var(--banner-bg);
+      color: var(--banner-fg);
+      padding: 0.55rem 1rem;
+      text-align: center;
+      font-weight: 600;
+      font-size: 0.875rem;
+      flex-shrink: 0;
+    }
+    .app {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      max-width: 42rem;
+      width: 100%;
+      margin: 0 auto;
+      min-height: 0;
+    }
+    .chat-header {
+      padding: 0.75rem 1rem 0.5rem;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .chat-header h1 {
+      margin: 0;
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+    .chat-header p {
+      margin: 0.15rem 0 0;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+    #chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      scroll-behavior: smooth;
+    }
+    .chat-empty {
+      margin: auto;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.95rem;
+      max-width: 18rem;
+    }
+    .msg-row {
+      display: flex;
+      width: 100%;
+    }
+    .msg-row.user { justify-content: flex-end; }
+    .msg-row.ai { justify-content: flex-start; }
+    .msg-row.system { justify-content: center; }
+    .bubble {
+      max-width: 88%;
+      padding: 0.75rem 1rem;
+      border-radius: 1rem;
+      word-wrap: break-word;
+    }
+    .bubble.user {
+      background: var(--user-bubble);
+      color: var(--user-text);
+      border-bottom-right-radius: 0.25rem;
+    }
+    .bubble.ai {
+      background: var(--ai-bubble);
+      color: var(--ai-text);
+      border: 1px solid var(--border);
+      border-bottom-left-radius: 0.25rem;
+      font-size: 1.05rem;
+      line-height: 1.55;
+    }
+    .bubble.system {
+      background: transparent;
+      color: var(--muted);
+      font-size: 0.85rem;
+      text-align: center;
+      max-width: 100%;
+      padding: 0.25rem;
+    }
+    .bubble.error {
+      background: var(--error-bg);
+      border: 1px solid var(--error-border);
+      color: var(--error-text);
+      border-radius: 0.75rem;
+      max-width: 100%;
+      font-size: 0.95rem;
+    }
+    .bubble.error strong { display: block; margin-bottom: 0.35rem; }
+    .bubble.error .hint {
+      margin-top: 0.5rem;
+      font-size: 0.85rem;
+      color: #fca5a5;
+    }
+    .badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      margin-top: 0.5rem;
+    }
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.55rem;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
+    .badge.emergency { background: var(--badge-emergency); color: #fff; }
+    .badge.escalation { background: var(--badge-escalation); color: #fff; }
+    .badge.info { background: var(--badge-info); color: #fff; }
+    .source-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      align-items: center;
+      margin-top: 0.55rem;
+      padding-top: 0.45rem;
+      border-top: 1px solid rgba(148, 163, 184, 0.2);
+    }
+    .source-label {
+      font-size: 0.68rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+      margin-right: 0.15rem;
+    }
+    .source-chip {
+      display: inline-block;
+      padding: 0.12rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 500;
+      background: rgba(56, 189, 248, 0.12);
+      color: #7dd3fc;
+      border: 1px solid rgba(56, 189, 248, 0.25);
+    }
+    .typing {
+      display: inline-flex;
+      gap: 0.25rem;
+      align-items: center;
+      color: var(--muted);
+      font-size: 0.85rem;
+      padding: 0.5rem 0.75rem;
+    }
+    .typing span {
+      width: 0.45rem;
+      height: 0.45rem;
+      border-radius: 50%;
+      background: var(--muted);
+      animation: pulse 1.2s infinite ease-in-out;
+    }
+    .typing span:nth-child(2) { animation-delay: 0.15s; }
+    .typing span:nth-child(3) { animation-delay: 0.3s; }
+    @keyframes pulse {
+      0%, 80%, 100% { opacity: 0.35; transform: scale(0.85); }
+      40% { opacity: 1; transform: scale(1); }
+    }
+    .composer {
+      border-top: 1px solid var(--border);
+      padding: 0.75rem 1rem;
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+    .composer-row {
+      display: flex;
+      gap: 0.5rem;
+      align-items: flex-end;
+    }
+    #message-input {
+      flex: 1;
+      padding: 0.65rem 0.85rem;
+      border: 1px solid var(--border);
+      border-radius: 1.25rem;
+      background: var(--panel);
+      color: var(--text);
+      font: inherit;
+      resize: none;
+      min-height: 2.75rem;
+      max-height: 8rem;
+    }
+    #message-input:focus {
+      outline: 2px solid rgba(56, 189, 248, 0.45);
+      outline-offset: 0;
+    }
+    .icon-btn, .send-btn {
+      border: none;
+      border-radius: 999px;
+      cursor: pointer;
+      font: inherit;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+    .send-btn {
+      padding: 0.65rem 1.1rem;
+      background: var(--accent);
+      color: #0f172a;
+    }
+    .icon-btn {
+      width: 2.75rem;
+      height: 2.75rem;
+      background: var(--panel);
+      color: var(--text);
+      border: 1px solid var(--border);
+      font-size: 1rem;
+    }
+    .icon-btn:disabled, .send-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+    .composer-meta {
+      margin-top: 0.45rem;
+      font-size: 0.78rem;
+      color: var(--muted);
+      min-height: 1.1rem;
+    }
+    .tts-hint {
+      margin: 0.35rem 0 0;
+      font-size: 0.72rem;
+      color: var(--muted);
+      line-height: 1.35;
+    }
+    .tts-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+      margin-top: 0.35rem;
+    }
+    .tts-row label {
+      font-size: 0.72rem;
+      color: var(--muted);
+    }
+    #voice-select {
+      flex: 1;
+      min-width: 10rem;
+      padding: 0.35rem 0.5rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--panel);
+      color: var(--text);
+      font: inherit;
+      font-size: 0.78rem;
+    }
+    details.advanced {
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+    details.advanced summary {
+      cursor: pointer;
+      padding: 0.55rem 1rem;
+      font-size: 0.8rem;
+      color: var(--muted);
+      user-select: none;
+    }
+    .advanced-body {
+      padding: 0 1rem 0.85rem;
+      font-size: 0.85rem;
+    }
+    .advanced-body label {
+      display: block;
+      color: var(--muted);
+      margin-bottom: 0.25rem;
+      font-size: 0.78rem;
+    }
+    .advanced-body input[type="text"] {
+      width: 100%;
+      padding: 0.45rem 0.55rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--panel);
+      color: var(--text);
+      margin-bottom: 0.65rem;
+      font: inherit;
+    }
+    .advanced-body .row {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+    .session-id {
+      font-family: ui-monospace, monospace;
+      font-size: 0.75rem;
+      word-break: break-all;
+      color: var(--muted);
+    }
+    #technical-details {
+      display: none;
+      margin-top: 0.5rem;
+      padding: 0.55rem;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-family: ui-monospace, monospace;
+      font-size: 0.72rem;
+      max-height: 12rem;
+      overflow: auto;
+      white-space: pre-wrap;
+      color: var(--muted);
+    }
+    #technical-details.visible { display: block; }
+  </style>
+</head>
+<body>
+  <div class="banner">TEMPORARY TEST UI — not for production use</div>
+
+  <div class="app">
+    <header class="chat-header">
+      <h1>Health assistant</h1>
+      <p>Ask a question like you would in a messaging app.</p>
+    </header>
+
+    <div id="chat-messages" aria-live="polite">
+      <p class="chat-empty">Starting conversation…</p>
+    </div>
+
+    <div class="composer">
+      <div class="composer-row">
+        <textarea id="message-input" rows="1" placeholder="Type your message…" aria-label="Message"></textarea>
+        <button type="button" class="icon-btn" id="btn-voice" title="Voice input" aria-label="Voice input">🎤</button>
+        <button type="button" class="icon-btn" id="btn-tts" title="Hear latest reply" aria-label="Hear latest reply">🔊</button>
+        <button type="button" class="send-btn" id="btn-send">Send</button>
+      </div>
+      <div class="composer-meta" id="composer-meta"></div>
+      <div class="tts-row">
+        <label for="voice-select">Voice</label>
+        <select id="voice-select" aria-label="TTS voice">
+          <option value="">Loading voices…</option>
+        </select>
+      </div>
+      <p class="tts-hint" id="tts-hint">
+        Checking local Piper TTS…
+      </p>
+      <p class="tts-hint" id="voice-latency-hint" style="margin-top:0.25rem;color:var(--accent);font-size:0.78rem;">
+        Voice mode: faster replies (summary deferred).
+      </p>
+    </div>
+
+    <details class="advanced">
+      <summary>Advanced settings</summary>
+      <div class="advanced-body">
+        <label for="api-base">API base URL</label>
+        <input type="text" id="api-base" value="http://localhost:8001/api/v1" autocomplete="off" />
+
+        <div class="row">
+          <label><input type="checkbox" id="show-technical" /> Show technical details</label>
+        </div>
+        <pre id="technical-details">—</pre>
+
+        <p>Patient: <code>mock-patient-001</code></p>
+        <p>Session: <span id="session-id" class="session-id">—</span></p>
+        <button type="button" class="send-btn" id="btn-new-session" style="font-size:0.8rem;padding:0.4rem 0.75rem;">New conversation</button>
+      </div>
+    </details>
+  </div>
+
+  <script>
+    (function () {
+      const PATIENT_ID = "mock-patient-001";
+      const FRIENDLY_ERROR =
+        "The assistant is temporarily unavailable. Please try again.";
+
+      const apiBaseEl = document.getElementById("api-base");
+      const chatMessages = document.getElementById("chat-messages");
+      const sessionIdEl = document.getElementById("session-id");
+      const messageInput = document.getElementById("message-input");
+      const btnSend = document.getElementById("btn-send");
+      const btnNewSession = document.getElementById("btn-new-session");
+      const btnVoice = document.getElementById("btn-voice");
+      const btnTts = document.getElementById("btn-tts");
+      const composerMeta = document.getElementById("composer-meta");
+      const voiceSelect = document.getElementById("voice-select");
+      const ttsHint = document.getElementById("tts-hint");
+      const showTechnical = document.getElementById("show-technical");
+      const technicalDetails = document.getElementById("technical-details");
+
+      let sessionId = null;
+      let busy = false;
+      let recognition = null;
+      let listening = false;
+      let lastAiText = "";
+      let streamingAiRow = null;
+      const TTS_MAX_SENTENCES = 6;
+
+      function stripForTts(text) {
+        let t = (text || "").trim();
+        const markers = [
+          "This information is not a substitute",
+          "If you believe this is a medical emergency",
+        ];
+        markers.forEach(function (m) {
+          const i = t.indexOf(m);
+          if (i !== -1) t = t.slice(0, i).trim();
+        });
+        const r = t.indexOf("References:");
+        if (r !== -1) t = t.slice(0, r).trim();
+        return t;
+      }
+      const VOICE_USE_STREAM = true;
+      let lastTechnical = null;
+      let localTtsAvailable = false;
+      let localTtsVoices = [];
+      let selectedVoiceId = null;
+      let currentAudio = null;
+
+      const PIPER_VOICE_CATALOG = [
+        {
+          id: "en_US-lessac-medium",
+          name: "Lessac (US, medium)",
+          language: "en-US",
+          ready: false,
+        },
+        {
+          id: "en_US-amy-low",
+          name: "Amy (US, low)",
+          language: "en-US",
+          ready: false,
+        },
+        {
+          id: "en_GB-alan-medium",
+          name: "Alan (GB, medium)",
+          language: "en-GB",
+          ready: false,
+        },
+      ];
+      const DEFAULT_PIPER_VOICE_ID = "en_US-lessac-medium";
+
+      function apiBase() {
+        return apiBaseEl.value.replace(/\/$/, "");
+      }
+
+      function escapeHtml(s) {
+        return String(s)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      }
+
+      function scrollChatToBottom() {
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      }
+
+      function clearEmptyState() {
+        const empty = chatMessages.querySelector(".chat-empty");
+        if (empty) empty.remove();
+      }
+
+      function setTechnical(data) {
+        lastTechnical = data;
+        if (showTechnical.checked) {
+          technicalDetails.textContent =
+            typeof data === "string" ? data : JSON.stringify(data, null, 2);
+          technicalDetails.classList.add("visible");
+        }
+      }
+
+      function sourceChips(citations) {
+        if (!citations || !citations.length) return "";
+        const chips = citations
+          .map(function (c) {
+            return '<span class="source-chip">' + escapeHtml(c) + "</span>";
+          })
+          .join("");
+        return (
+          '<div class="source-chips">' +
+          '<span class="source-label">Sources</span>' +
+          chips +
+          "</div>"
+        );
+      }
+
+      function hintBadges(uiHints) {
+        if (!uiHints || !Object.keys(uiHints).length) return "";
+        const badges = [];
+        if (uiHints.show_emergency_banner) {
+          badges.push('<span class="badge emergency">Emergency</span>');
+        }
+        if (uiHints.show_escalation_banner) {
+          badges.push('<span class="badge escalation">Needs attention</span>');
+        }
+        if (uiHints.physician_notified) {
+          badges.push('<span class="badge info">Physician notified</span>');
+        }
+        if (!badges.length) return "";
+        return '<div class="badges">' + badges.join("") + "</div>";
+      }
+
+      function appendUserMessage(text) {
+        clearEmptyState();
+        const row = document.createElement("div");
+        row.className = "msg-row user";
+        row.innerHTML =
+          '<div class="bubble user">' + escapeHtml(text) + "</div>";
+        chatMessages.appendChild(row);
+        scrollChatToBottom();
+      }
+
+      function finalizeAiMessage(response) {
+        clearEmptyState();
+        const text = response.patient_response_text || "";
+        lastAiText = text;
+        const inner =
+          escapeHtml(text) +
+          sourceChips(response.citations) +
+          hintBadges(response.ui_hints);
+        if (streamingAiRow) {
+          const bubble = streamingAiRow.querySelector(".bubble.ai");
+          if (bubble) bubble.innerHTML = inner;
+          streamingAiRow = null;
+        } else {
+          const row = document.createElement("div");
+          row.className = "msg-row ai";
+          row.innerHTML = '<div class="bubble ai">' + inner + "</div>";
+          chatMessages.appendChild(row);
+        }
+        scrollChatToBottom();
+      }
+
+      function appendAiMessage(response) {
+        finalizeAiMessage(response);
+      }
+
+      function extractPatientTextPartial(jsonAccum) {
+        const m = jsonAccum.match(/"patient_response_text"\s*:\s*"((?:[^"\\]|\\.)*)/);
+        if (!m) return "";
+        try {
+          return JSON.parse('"' + m[1] + '"');
+        } catch (_e) {
+          return m[1].replace(/\\n/g, "\n").replace(/\\"/g, '"');
+        }
+      }
+
+      function ensureStreamingAiBubble() {
+        if (streamingAiRow) return streamingAiRow;
+        clearEmptyState();
+        removeTyping();
+        const row = document.createElement("div");
+        row.className = "msg-row ai";
+        row.innerHTML = '<div class="bubble ai"></div>';
+        chatMessages.appendChild(row);
+        streamingAiRow = row;
+        scrollChatToBottom();
+        return row;
+      }
+
+      function updateStreamingAiBubble(partialText) {
+        const row = ensureStreamingAiBubble();
+        const bubble = row.querySelector(".bubble.ai");
+        if (bubble) bubble.textContent = partialText || "…";
+        scrollChatToBottom();
+      }
+
+      function appendSystemMessage(text) {
+        clearEmptyState();
+        const row = document.createElement("div");
+        row.className = "msg-row system";
+        row.innerHTML =
+          '<div class="bubble system">' + escapeHtml(text) + "</div>";
+        chatMessages.appendChild(row);
+        scrollChatToBottom();
+      }
+
+      function appendErrorMessage(technicalDetail) {
+        clearEmptyState();
+        let hint = "";
+        const detailStr = String(technicalDetail || "").toLowerCase();
+        if (
+          detailStr.indexOf("deepseek_api_key") !== -1 ||
+          detailStr.indexOf("not set") !== -1 ||
+          detailStr.indexOf("not configured") !== -1
+        ) {
+          hint =
+            '<p class="hint">If you recently added DEEPSEEK_API_KEY to .env, save the file and restart the server, then try again.</p>';
+        }
+        const row = document.createElement("div");
+        row.className = "msg-row system";
+        row.innerHTML =
+          '<div class="bubble error"><strong>' +
+          escapeHtml(FRIENDLY_ERROR) +
+          "</strong>" +
+          hint +
+          "</div>";
+        chatMessages.appendChild(row);
+        scrollChatToBottom();
+      }
+
+      function showStatus(label) {
+        clearEmptyState();
+        removeTyping();
+        const row = document.createElement("div");
+        row.className = "msg-row ai";
+        row.id = "typing-indicator";
+        row.innerHTML =
+          '<div class="typing" aria-label="' +
+          escapeHtml(label) +
+          '">' +
+          '<span></span><span></span><span></span> ' +
+          escapeHtml(label) +
+          "</div>";
+        chatMessages.appendChild(row);
+        scrollChatToBottom();
+      }
+
+      function showTyping() {
+        showStatus("Thinking…");
+      }
+
+      function removeTyping() {
+        const el = document.getElementById("typing-indicator");
+        if (el) el.remove();
+      }
+
+      function setBusy(on, statusLabel) {
+        busy = on;
+        btnSend.disabled = on;
+        btnNewSession.disabled = on;
+        btnVoice.disabled = on || !recognition;
+        if (on && !listening) showStatus(statusLabel || "Thinking…");
+        if (!on) removeTyping();
+      }
+
+      function updateTtsHint(mode, voiceName) {
+        if (!ttsHint) return;
+        if (mode === "piper") {
+          ttsHint.textContent =
+            "Local Piper (not browser fallback): " +
+            (voiceName || selectedVoiceId || "en_US-lessac-medium") +
+            " — production: Kokoro-82M on-device.";
+        } else if (mode === "browser") {
+          ttsHint.textContent =
+            "Browser fallback" +
+            (voiceName ? ": " + voiceName : "") +
+            " — enable LOCAL_TTS_ENABLED and download Piper voices for natural playback.";
+        } else {
+          ttsHint.textContent = "Checking local Piper TTS…";
+        }
+      }
+
+      function selectedVoiceLabel() {
+        if (!voiceSelect || !voiceSelect.selectedOptions.length) return null;
+        return voiceSelect.selectedOptions[0].textContent;
+      }
+
+      function populateVoiceSelect(voices, defaultVoiceId) {
+        if (!voiceSelect) return;
+        const list = voices && voices.length ? voices : PIPER_VOICE_CATALOG;
+        const defaultId = defaultVoiceId || DEFAULT_PIPER_VOICE_ID;
+        voiceSelect.innerHTML = "";
+        list.forEach(function (v) {
+          const opt = document.createElement("option");
+          opt.value = v.id;
+          opt.textContent =
+            v.name + (v.ready ? "" : " (not ready)") + " — " + v.language;
+          opt.disabled = !v.ready;
+          if (v.id === defaultId && v.ready) opt.selected = true;
+          voiceSelect.appendChild(opt);
+        });
+        const ready = list.filter(function (v) {
+          return v.ready;
+        });
+        localTtsAvailable = ready.length > 0;
+        if (!voiceSelect.value) {
+          const prefer = list.find(function (v) {
+            return v.id === defaultId && v.ready;
+          });
+          const pick = prefer || ready[0];
+          if (pick) {
+            voiceSelect.value = pick.id;
+          }
+        }
+        selectedVoiceId = voiceSelect.value || null;
+        if (composerMeta && localTtsAvailable) {
+          composerMeta.textContent = "";
+        }
+        updateTtsHint(
+          localTtsAvailable ? "piper" : "browser",
+          localTtsAvailable ? selectedVoiceLabel() : null
+        );
+      }
+
+      async function loadLocalTtsVoices() {
+        if (!voiceSelect) return;
+        updateTtsHint();
+        localTtsAvailable = false;
+        voiceSelect.innerHTML = '<option value="">Loading voices…</option>';
+        try {
+          const res = await fetch(apiBase() + "/local-tts/voices", {
+            headers: { Accept: "application/json" },
+          });
+          if (!res.ok) {
+            localTtsVoices = PIPER_VOICE_CATALOG.slice();
+            populateVoiceSelect(localTtsVoices, DEFAULT_PIPER_VOICE_ID);
+            if (composerMeta) {
+              composerMeta.textContent =
+                "Local TTS API unavailable (enable LOCAL_TTS_ENABLED and restart server).";
+            }
+            return;
+          }
+          const body = await res.json();
+          localTtsVoices = body.voices || PIPER_VOICE_CATALOG.slice();
+          populateVoiceSelect(
+            localTtsVoices,
+            body.default_voice_id || DEFAULT_PIPER_VOICE_ID
+          );
+        } catch (_err) {
+          localTtsVoices = PIPER_VOICE_CATALOG.slice();
+          populateVoiceSelect(localTtsVoices, DEFAULT_PIPER_VOICE_ID);
+          if (composerMeta) {
+            composerMeta.textContent =
+              "Could not reach local TTS API — using browser speech fallback.";
+          }
+        }
+      }
+
+      voiceSelect.addEventListener("change", function () {
+        selectedVoiceId = voiceSelect.value || null;
+        updateTtsHint(localTtsAvailable ? "piper" : "browser", selectedVoiceLabel());
+      });
+
+      async function fetchLocalTtsBlob(text) {
+        const res = await fetch(apiBase() + "/local-tts/speak", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "audio/wav" },
+          body: JSON.stringify({
+            text: text,
+            voice_id: selectedVoiceId || undefined,
+          }),
+        });
+        if (!res.ok) {
+          let detail = res.status + " error";
+          try {
+            const errBody = await res.json();
+            if (errBody.detail) detail = String(errBody.detail);
+          } catch (_e) {
+            /* ignore */
+          }
+          throw new Error(detail);
+        }
+        return res.blob();
+      }
+
+      function playAudioBlob(blob) {
+        return new Promise(function (resolve, reject) {
+          const url = URL.createObjectURL(blob);
+          if (currentAudio) {
+            currentAudio.pause();
+            if (currentAudio.src) URL.revokeObjectURL(currentAudio.src);
+          }
+          currentAudio = new Audio(url);
+          currentAudio.onended = function () {
+            URL.revokeObjectURL(url);
+            resolve();
+          };
+          currentAudio.onerror = function () {
+            URL.revokeObjectURL(url);
+            reject(new Error("audio playback failed"));
+          };
+          updateTtsHint("piper", selectedVoiceLabel());
+          currentAudio.play().catch(reject);
+        });
+      }
+
+      async function speakWithLocalTts(text) {
+        const spoken = stripForTts(text);
+        const blob = await fetchLocalTtsBlob(spoken);
+        await playAudioBlob(blob);
+      }
+
+      async function speakProgressive(text) {
+        const spoken = stripForTts(text);
+        if (!spoken) return;
+        if (!localTtsAvailable) {
+          speakWithBrowser(spoken);
+          return;
+        }
+        if (composerMeta) {
+          composerMeta.textContent =
+            "Generating natural voice (Piper) — may take 10–25s…";
+        }
+        try {
+          // Single synthesis pass; Piper inserts sentence pauses internally.
+          const blob = await fetchLocalTtsBlob(spoken);
+          await playAudioBlob(blob);
+        } catch (err) {
+          if (composerMeta) {
+            composerMeta.textContent =
+              "Piper voice failed: " + (err.message || "error") +
+              ". Restart the server after ./scripts/setup_local_tts.sh";
+          }
+          return;
+        }
+        if (composerMeta && localTtsAvailable) {
+          composerMeta.textContent = "";
+        }
+      }
+
+      const PREFERRED_VOICE_PATTERNS = [
+        /samantha/i,
+        /karen/i,
+        /moira/i,
+        /tessa/i,
+        /google uk english female/i,
+        /google us english/i,
+        /microsoft.*natural/i,
+        /neural/i,
+        /enhanced/i,
+        /premium/i,
+        /aaron/i,
+        /nicky/i,
+        /daniel/i,
+      ];
+
+      let cachedVoice = null;
+      let speakQueue = [];
+
+      function pickBestVoice() {
+        if (cachedVoice) return cachedVoice;
+        const voices = window.speechSynthesis.getVoices();
+        if (!voices.length) return null;
+        for (let p = 0; p < PREFERRED_VOICE_PATTERNS.length; p++) {
+          const pat = PREFERRED_VOICE_PATTERNS[p];
+          for (let i = 0; i < voices.length; i++) {
+            const v = voices[i];
+            if (pat.test(v.name) && /^en(-|$)/i.test(v.lang)) {
+              cachedVoice = v;
+              return cachedVoice;
+            }
+          }
+        }
+        for (let j = 0; j < voices.length; j++) {
+          if (/^en(-|$)/i.test(voices[j].lang)) {
+            cachedVoice = voices[j];
+            return cachedVoice;
+          }
+        }
+        cachedVoice = voices[0];
+        return cachedVoice;
+      }
+
+      function splitForTts(text) {
+        const cleaned = (text || "").replace(/\s+/g, " ").trim();
+        if (!cleaned) return [];
+        const parts = cleaned.match(/[^.!?]+[.!?]+|[^.!?]+$/g);
+        if (!parts) return [cleaned];
+        return parts.map(function (s) {
+          return s.trim();
+        }).filter(Boolean);
+      }
+
+      function utterancePitch(base) {
+        return base + (Math.random() * 0.06 - 0.03);
+      }
+
+      function speakChunks(chunks, index) {
+        if (!window.speechSynthesis || !chunks.length) return;
+        if (index >= chunks.length) {
+          speakQueue = [];
+          return;
+        }
+        const u = new SpeechSynthesisUtterance(chunks[index]);
+        u.lang = "en-US";
+        const voice = pickBestVoice();
+        if (voice) u.voice = voice;
+        u.rate = 0.92 + Math.random() * 0.03;
+        u.pitch = utterancePitch(1);
+        u.onend = function () {
+          window.setTimeout(function () {
+            speakChunks(chunks, index + 1);
+          }, index < chunks.length - 1 ? 180 : 0);
+        };
+        u.onerror = function () {
+          speakChunks(chunks, index + 1);
+        };
+        window.speechSynthesis.speak(u);
+      }
+
+      function speakWithBrowser(text) {
+        if (!window.speechSynthesis || !text) return;
+        window.speechSynthesis.cancel();
+        speakQueue = splitForTts(text);
+        if (!speakQueue.length) return;
+        updateTtsHint("browser", pickBestVoice() ? pickBestVoice().name : null);
+        function start() {
+          window.setTimeout(function () {
+            speakChunks(speakQueue, 0);
+          }, 160);
+        }
+        if (window.speechSynthesis.getVoices().length) {
+          start();
+        } else {
+          window.speechSynthesis.onvoiceschanged = function () {
+            window.speechSynthesis.onvoiceschanged = null;
+            cachedVoice = null;
+            start();
+          };
+        }
+      }
+
+      async function speak(text, progressive) {
+        if (!text) return;
+        if (currentAudio) {
+          currentAudio.pause();
+          currentAudio = null;
+        }
+        if (window.speechSynthesis) {
+          window.speechSynthesis.cancel();
+        }
+        if (localTtsAvailable) {
+          try {
+            if (progressive) {
+              await speakProgressive(text);
+            } else {
+              await speakWithLocalTts(text);
+            }
+            return;
+          } catch (err) {
+            if (composerMeta) {
+              composerMeta.textContent =
+                "Piper voice failed: " + (err.message || "error") +
+                ". Restart the server after ./scripts/setup_local_tts.sh";
+            }
+            return;
+          }
+        }
+        speakWithBrowser(stripForTts(text));
+      }
+
+      if (window.speechSynthesis) {
+        window.speechSynthesis.getVoices();
+      }
+
+      function parseErrorDetail(body, status) {
+        if (!body) return status + " " + (status === 503 ? "Service Unavailable" : "Error");
+        const d = body.detail;
+        if (typeof d === "string") return d;
+        if (Array.isArray(d)) return JSON.stringify(d);
+        if (d && typeof d === "object") return JSON.stringify(d);
+        return body.message || status + " Error";
+      }
+
+      async function apiFetch(path, options) {
+        const url = apiBase() + path;
+        const res = await fetch(url, {
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          ...options,
+        });
+        let body;
+        const text = await res.text();
+        try {
+          body = text ? JSON.parse(text) : null;
+        } catch {
+          body = { _raw: text };
+        }
+        if (!res.ok) {
+          const detail = parseErrorDetail(body, res.status);
+          const err = new Error(detail);
+          err.status = res.status;
+          err.body = body;
+          throw err;
+        }
+        return body;
+      }
+
+      async function createSession() {
+        setBusy(true);
+        composerMeta.textContent = "";
+        try {
+          const body = await apiFetch("/sessions", {
+            method: "POST",
+            body: JSON.stringify({
+              patient_id: PATIENT_ID,
+              channel: "text",
+            }),
+          });
+          setTechnical(body);
+          sessionId = body.session_id;
+          sessionIdEl.textContent = sessionId;
+          chatMessages.innerHTML = "";
+          appendSystemMessage("Conversation ready. How can we help you today?");
+        } catch (err) {
+          sessionId = null;
+          sessionIdEl.textContent = "—";
+          setTechnical({ error: err.message, status: err.status, body: err.body });
+          chatMessages.innerHTML = "";
+          appendErrorMessage(err.message);
+        } finally {
+          setBusy(false);
+        }
+      }
+
+      async function sendTurnStream(trimmed, channel) {
+        const url =
+          apiBase() +
+          "/sessions/" +
+          encodeURIComponent(sessionId) +
+          "/messages/stream";
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "text/event-stream" },
+          body: JSON.stringify({
+            session_id: sessionId,
+            user_id: PATIENT_ID,
+            text: trimmed,
+            channel: channel || "text",
+          }),
+        });
+        if (!res.ok) {
+          let body = null;
+          const raw = await res.text();
+          try {
+            body = raw ? JSON.parse(raw) : null;
+          } catch (_e) {
+            body = { _raw: raw };
+          }
+          const detail = parseErrorDetail(body, res.status);
+          const err = new Error(detail);
+          err.status = res.status;
+          err.body = body;
+          throw err;
+        }
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        let jsonAccum = "";
+        let finalBody = null;
+
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() || "";
+          for (let i = 0; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (!line.startsWith("data:")) continue;
+            const payload = JSON.parse(line.slice(5).trim());
+            if (payload.type === "chunk") {
+              jsonAccum += payload.delta || "";
+              updateStreamingAiBubble(extractPatientTextPartial(jsonAccum));
+            } else if (payload.type === "done") {
+              finalBody = payload.response;
+            } else if (payload.type === "error") {
+              throw new Error(payload.detail || "stream error");
+            }
+          }
+        }
+        if (!finalBody) {
+          throw new Error("Stream ended without a response");
+        }
+        setTechnical(finalBody);
+        finalizeAiMessage(finalBody);
+        return finalBody;
+      }
+
+      async function sendTurn(text, channel, showUserBubble) {
+        if (!sessionId) {
+          appendErrorMessage("No active conversation");
+          return;
+        }
+        const trimmed = (text || "").trim();
+        if (!trimmed) return;
+        const ch = channel || "text";
+
+        if (showUserBubble !== false) {
+          appendUserMessage(trimmed);
+        }
+        messageInput.value = "";
+        if (ch === "voice") {
+          composerMeta.textContent =
+            "Voice mode: faster replies (summary deferred).";
+        } else {
+          composerMeta.textContent = "";
+        }
+        setBusy(true, ch === "voice" ? "Thinking…" : "Thinking…");
+
+        try {
+          let body;
+          if (ch === "voice" && VOICE_USE_STREAM) {
+            body = await sendTurnStream(trimmed, ch);
+          } else {
+            body = await apiFetch(
+              "/sessions/" + encodeURIComponent(sessionId) + "/messages",
+              {
+                method: "POST",
+                body: JSON.stringify({
+                  session_id: sessionId,
+                  user_id: PATIENT_ID,
+                  text: trimmed,
+                  channel: ch,
+                }),
+              }
+            );
+            appendAiMessage(body);
+          }
+          setTechnical(body);
+          if (ch === "voice" && body.patient_response_text) {
+            speak(body.patient_response_text, true).catch(function (err) {
+              appendErrorMessage(err.message || "playback failed");
+            });
+          }
+        } catch (err) {
+          streamingAiRow = null;
+          setTechnical({ error: err.message, status: err.status, body: err.body });
+          appendErrorMessage(err.message);
+        } finally {
+          setBusy(false);
+        }
+      }
+
+      function initSpeech() {
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SR) {
+          btnVoice.disabled = true;
+          btnVoice.title = "Voice input not supported in this browser";
+          return;
+        }
+        recognition = new SR();
+        recognition.continuous = false;
+        recognition.interimResults = true;
+        recognition.lang = "en-US";
+
+        recognition.onresult = function (ev) {
+          let interim = "";
+          let finalText = "";
+          for (let i = ev.resultIndex; i < ev.results.length; i++) {
+            const t = ev.results[i][0].transcript;
+            if (ev.results[i].isFinal) finalText += t;
+            else interim += t;
+          }
+          composerMeta.textContent = interim
+            ? "Listening… " + interim
+            : finalText
+              ? "Heard: " + finalText
+              : "Listening…";
+          if (finalText) {
+            const spoken = finalText.trim();
+            appendUserMessage(spoken);
+            composerMeta.textContent = "Thinking…";
+            sendTurn(spoken, "voice", false);
+          }
+        };
+
+        recognition.onerror = function (ev) {
+          listening = false;
+          btnVoice.textContent = "🎤";
+          composerMeta.textContent = "";
+          appendErrorMessage(ev.error || "voice recognition failed");
+        };
+
+        recognition.onend = function () {
+          listening = false;
+          btnVoice.textContent = "🎤";
+          btnVoice.disabled = busy || !recognition;
+        };
+      }
+
+      btnSend.addEventListener("click", function () {
+        sendTurn(messageInput.value, "text");
+      });
+
+      messageInput.addEventListener("keydown", function (ev) {
+        if (ev.key === "Enter" && !ev.shiftKey) {
+          ev.preventDefault();
+          sendTurn(messageInput.value, "text");
+        }
+      });
+
+      btnNewSession.addEventListener("click", createSession);
+
+      btnTts.addEventListener("click", function () {
+        if (lastAiText) {
+          speak(lastAiText).catch(function (err) {
+            appendErrorMessage(err.message || "playback failed");
+          });
+        } else {
+          composerMeta.textContent = "No assistant reply to read yet.";
+        }
+      });
+
+      btnVoice.addEventListener("click", function () {
+        if (!recognition || busy) return;
+        if (listening) {
+          recognition.stop();
+          return;
+        }
+        composerMeta.textContent = "Listening… (speak now)";
+        try {
+          recognition.start();
+          listening = true;
+          btnVoice.textContent = "⏹";
+        } catch (err) {
+          appendErrorMessage(err.message);
+        }
+      });
+
+      showTechnical.addEventListener("change", function () {
+        if (showTechnical.checked) {
+          technicalDetails.classList.add("visible");
+          if (lastTechnical !== null) {
+            technicalDetails.textContent =
+              typeof lastTechnical === "string"
+                ? lastTechnical
+                : JSON.stringify(lastTechnical, null, 2);
+          }
+        } else {
+          technicalDetails.classList.remove("visible");
+        }
+      });
+
+      if (window.location.origin && window.location.origin !== "null") {
+        const sameOrigin = window.location.origin + "/api/v1";
+        if (apiBaseEl.value.indexOf("localhost:8001") !== -1) {
+          apiBaseEl.placeholder = sameOrigin + " (same host)";
+        }
+      }
+
+      apiBaseEl.addEventListener("change", function () {
+        loadLocalTtsVoices();
+      });
+      apiBaseEl.addEventListener("blur", function () {
+        loadLocalTtsVoices();
+      });
+
+      initSpeech();
+      loadLocalTtsVoices();
+      createSession();
+    })();
+  </script>
+</body>
+</html>

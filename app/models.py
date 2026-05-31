@@ -22,6 +22,7 @@ class Session(Base):
     requires_review = Column(Boolean, default=False)
     emergency_flag = Column(Boolean, default=False)
     closed = Column(Boolean, default=False)
+    citation_depth = Column(String, default="simple")
 
 
 class SessionMessage(Base):

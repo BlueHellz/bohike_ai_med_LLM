@@ -1,0 +1,6 @@
+numpy>=1.24.0
+pathvalidate>=3.0.0
+onnxruntime>=1.16.0,<2; python_version < "3.13" or platform_machine == "arm64"
+# Piper (install after the lines above):
+#   pip install --no-deps "piper-tts>=1.2.0"
+# Intel macOS + Python 3.13: onnxruntime has no PyPI wheel — use Python 3.12 for synthesis.

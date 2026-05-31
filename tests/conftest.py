@@ -1,3 +1,5 @@
+"""Shared pytest fixtures and helpers for the AEGIS test suite."""
+
 import json
 import os
 import tempfile
@@ -37,11 +39,14 @@ def make_reasoning_json(
     should_escalate=False,
     requires_review=False,
     emergency_detected=False,
+    source_citations=None,
 ):
     risk_flags = risk_flags or []
+    source_citations = source_citations or []
     return json.dumps(
         {
             "patient_response_text": patient_text,
+            "source_citations": source_citations,
             "clinician_layer": {
                 "summary": "Clinical summary.",
                 "key_findings": ["finding one"],

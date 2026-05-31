@@ -2,7 +2,9 @@
 
 from typing import List, Literal, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
+CitationDepth = Literal["simple", "detailed"]
 
 
 class PatientProfile(BaseModel):
@@ -19,6 +21,7 @@ class SessionMeta(BaseModel):
     language: str = "en"
     mode: Literal["triage", "education", "review", "surgical"]
     user_type: Literal["patient", "physician", "surgeon"]
+    citation_depth: CitationDepth = "simple"
 
 
 class Turn(BaseModel):
@@ -27,7 +30,7 @@ class Turn(BaseModel):
 
 
 class ClinicalContext(BaseModel):
-    """The only input the LLM ever receives. Never the full history."""
+    """Bounded context payload sent to the LLM; excludes full transcript history."""
 
     patient_profile: PatientProfile
     session_meta: SessionMeta
@@ -43,7 +46,7 @@ class RiskFlag(BaseModel):
 
 
 class ClinicianLayer(BaseModel):
-    """Never shown to patient."""
+    """Clinician-only layer; not exposed in patient API responses."""
 
     summary: str
     key_findings: List[str]
@@ -63,11 +66,12 @@ class SafetyDecision(BaseModel):
 
 
 class ReasoningOutput(BaseModel):
-    """Fixed schema. LLM must return exactly this structure."""
+    """Structured LLM output schema for consultation reasoning."""
 
     patient_response_text: str
     clinician_layer: ClinicianLayer
     safety: SafetyDecision
+    source_citations: List[str] = Field(default_factory=list)
 
 
 class TurnRequest(BaseModel):
@@ -75,12 +79,14 @@ class TurnRequest(BaseModel):
     text: str
     channel: Literal["text", "voice"] = "text"
     user_id: str
+    citation_depth: Optional[CitationDepth] = None
 
 
 class TurnResponse(BaseModel):
     patient_response_text: str
     ui_hints: dict = {}
     session_id: str
+    citations: List[str] = Field(default_factory=list)
 
 
 class CreateSessionRequest(BaseModel):
@@ -88,6 +94,7 @@ class CreateSessionRequest(BaseModel):
     channel: Literal["text", "voice"] = "text"
     user_type: Literal["patient", "physician", "surgeon"] = "patient"
     mode: Literal["triage", "education", "review", "surgical"] = "triage"
+    citation_depth: CitationDepth = "simple"
 
 
 class OverrideRequest(BaseModel):

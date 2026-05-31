@@ -9,3 +9,8 @@ dist/
 build/
 .DS_Store
 training/data/
+voices/piper/*.onnx
+voices/piper/*.onnx.json
+voices/piper/*.part
+tools/piper/
+.venv312/

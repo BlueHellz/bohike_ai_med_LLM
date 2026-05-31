@@ -1,0 +1,29 @@
+{
+  "default_voice_id": "en_US-lessac-medium",
+  "voices": [
+    {
+      "id": "en_US-lessac-medium",
+      "name": "Lessac (US, medium)",
+      "language": "en-US",
+      "quality": "medium",
+      "model_file": "en_US-lessac-medium.onnx",
+      "description": "Natural US English; recommended default for test-ui playback."
+    },
+    {
+      "id": "en_US-amy-low",
+      "name": "Amy (US, low)",
+      "language": "en-US",
+      "quality": "low",
+      "model_file": "en_US-amy-low.onnx",
+      "description": "Lightweight US English voice; faster synthesis, slightly smaller model."
+    },
+    {
+      "id": "en_GB-alan-medium",
+      "name": "Alan (GB, medium)",
+      "language": "en-GB",
+      "quality": "medium",
+      "model_file": "en_GB-alan-medium.onnx",
+      "description": "British English medium-quality voice."
+    }
+  ]
+}

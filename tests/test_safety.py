@@ -1,3 +1,5 @@
+"""Tests for post-LLM safety validation and content enforcement."""
+
 import json
 
 import pytest
@@ -10,6 +12,39 @@ from app.agents.safety import (
     validate_and_enforce,
 )
 from tests.conftest import make_reasoning_json
+
+
+@pytest.mark.asyncio
+async def test_citations_preserved_with_disclaimer():
+    patient_text = (
+        "Persistent headaches can have many causes (Source: NHS — headache guidance). "
+        "Tell me more about when this started."
+    )
+    raw = make_reasoning_json(
+        patient_text,
+        risk_flags=[{"type": "headache", "severity": "medium", "rationale": "persistent"}],
+        source_citations=["NHS — headache guidance"],
+    )
+    out = await validate_and_enforce(raw, _noop_repair)
+    assert STANDARD_DISCLAIMER in out.patient_response_text
+    assert "NHS — headache guidance" in out.patient_response_text
+    assert out.source_citations == ["NHS — headache guidance"]
+
+
+@pytest.mark.asyncio
+async def test_emergency_disclaimer_with_citations():
+    patient_text = (
+        "Chest pain with arm radiation needs urgent evaluation "
+        "(Source: AHA — heart attack signs)."
+    )
+    raw = make_reasoning_json(
+        patient_text,
+        risk_flags=[{"type": "chest_pain", "severity": "high", "rationale": "ACS concern"}],
+        source_citations=["AHA — heart attack signs"],
+    )
+    out = await validate_and_enforce(raw, _noop_repair)
+    assert out.patient_response_text.startswith(EMERGENCY_DISCLAIMER)
+    assert out.source_citations == ["AHA — heart attack signs"]
 
 
 @pytest.mark.asyncio

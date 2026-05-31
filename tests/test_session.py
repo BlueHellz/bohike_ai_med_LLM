@@ -1,3 +1,5 @@
+"""Tests for session lifecycle and clinical context assembly."""
+
 import os
 
 import pytest

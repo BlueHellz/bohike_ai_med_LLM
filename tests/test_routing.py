@@ -1,3 +1,5 @@
+"""Tests for consultation mode and model routing."""
+
 from app.agents.routing import route
 from app.schemas import ClinicalContext, PatientProfile, SessionMeta, Turn
 

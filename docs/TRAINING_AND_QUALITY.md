@@ -80,6 +80,17 @@ are present.
 Physician review is triggered automatically when `requires_physician_review` or
 `emergency_detected` is set in the safety decision.
 
+## Source citations (patient responses)
+
+When the model makes factual medical statements (mechanisms, epidemiology, care pathways,
+symptom associations), it adds brief medically-based source references. Default mode
+(`citation_depth=simple`) uses short inline parentheticals such as
+`(Source: NHS — headache red flags)` plus a `source_citations` array for UI chips — at
+most two cites per reply unless emergency triage. Detailed mode (`citation_depth=detailed`)
+adds a short `References:` block at the end of the patient text. Citations are never used
+for patient-specific diagnoses. The safety layer still appends standard and emergency
+disclaimers independently; citations do not replace those disclaimers.
+
 ## Optional future paths
 
 ### Fine-tuning DeepSeek

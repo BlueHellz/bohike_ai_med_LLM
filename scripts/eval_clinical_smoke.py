@@ -12,7 +12,7 @@ from typing import Optional
 
 import httpx
 
-# Repository root on sys.path for `app` imports in mock mode
+# Repository root on sys.path for app imports in mock mode.
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]

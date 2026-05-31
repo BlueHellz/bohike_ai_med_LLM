@@ -1,23 +1,31 @@
 """Session lifecycle, context assembly, and rolling summary updates."""
 
+import asyncio
+import logging
 import os
 import uuid
 from pathlib import Path
+from typing import Awaitable, Callable
 
 from sqlalchemy import desc, select
+
+from app.database import async_session
 
 from app.integrations.patient_data import resolve_patient_profile
 from app.models import AISummary, Session, SessionMessage
 from app.schemas import ClinicalContext, ClinicianLayer, SessionMeta, Turn
 
 PROMPTS_DIR = Path(__file__).resolve().parents[2] / "prompts"
+logger = logging.getLogger(__name__)
 
 
 def _recent_k() -> int:
     return int(os.getenv("RECENT_TURNS_K", "5"))
 
 
-async def create_session(db, patient_id, channel="text", user_type="patient", mode="triage"):
+async def create_session(
+    db, patient_id, channel="text", user_type="patient", mode="triage", citation_depth="simple"
+):
     sid = str(uuid.uuid4())
     db.add(
         Session(
@@ -26,14 +34,17 @@ async def create_session(db, patient_id, channel="text", user_type="patient", mo
             channel=channel,
             user_type=user_type,
             mode=mode,
+            citation_depth=citation_depth,
         )
     )
     await db.commit()
     return sid
 
 
-async def load_context(db, session_id, current_text, sender="patient") -> ClinicalContext:
-    """Assemble ClinicalContext: stub profile + live current_input from the request."""
+async def load_context(
+    db, session_id, current_text, sender="patient", turn_channel: str | None = None
+) -> ClinicalContext:
+    """Assemble ClinicalContext from fixture profile and live request input."""
     session = await db.get(Session, session_id)
     if not session:
         raise ValueError(f"Session {session_id} not found")
@@ -50,7 +61,10 @@ async def load_context(db, session_id, current_text, sender="patient") -> Clinic
     rows = list(reversed(result.scalars().all()))
     recent_turns = [Turn(sender=r.sender, text=r.text) for r in rows]
 
-    channel = session.channel if session.channel in ("text", "voice") else "text"
+    if turn_channel in ("text", "voice"):
+        channel = turn_channel
+    else:
+        channel = session.channel if session.channel in ("text", "voice") else "text"
     return ClinicalContext(
         patient_profile=profile,
         session_meta=SessionMeta(
@@ -58,6 +72,7 @@ async def load_context(db, session_id, current_text, sender="patient") -> Clinic
             channel=channel,
             mode=session.mode,
             user_type=session.user_type,
+            citation_depth=getattr(session, "citation_depth", None) or "simple",
         ),
         rolling_summary=session.rolling_summary or "",
         recent_turns=recent_turns,
@@ -110,3 +125,25 @@ async def update_rolling_summary(db, session_id, llm_summariser, old_summary, ne
     session = await db.get(Session, session_id)
     session.rolling_summary = new_sum.strip()
     await db.commit()
+
+
+def schedule_rolling_summary(
+    session_id: str,
+    llm_summariser: Callable[..., Awaitable[str]],
+    old_summary: str,
+    new_turns,
+) -> None:
+    """Schedule background rolling-summary update on a dedicated DB session (voice fast path)."""
+
+    async def _run() -> None:
+        async with async_session() as db:
+            try:
+                await update_rolling_summary(
+                    db, session_id, llm_summariser, old_summary, new_turns
+                )
+            except Exception:
+                logger.exception(
+                    "Background rolling summary failed for session %s", session_id
+                )
+
+    asyncio.create_task(_run())

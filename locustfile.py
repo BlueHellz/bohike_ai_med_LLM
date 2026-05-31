@@ -1,3 +1,5 @@
+"""Locust load-test scenario for consultation session endpoints."""
+
 from locust import HttpUser, between, task
 
 

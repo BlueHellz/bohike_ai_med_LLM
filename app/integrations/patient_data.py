@@ -33,7 +33,7 @@ class PatientDataProvider(ABC):
 class FixturePatientDataProvider(PatientDataProvider):
     """Stub profile provider backed by fixtures/patients.json for local dev and tests."""
 
-    # Demographics and clinical summaries only — not consultation messages.
+    # Demographics and clinical summaries only; consultation messages are excluded.
 
     def __init__(self) -> None:
         self._fixtures: dict[str, PatientProfile] = {}
@@ -69,7 +69,7 @@ def get_patient_data_provider() -> PatientDataProvider:
     mode = os.getenv("PATIENT_DATA_PROVIDER", "fixture").lower()
     if mode == "http":
         return HttpPatientDataProvider()
-    # Accept legacy "mock" value; behaviour is fixture profiles only.
+    # Legacy PATIENT_DATA_PROVIDER value "mock"; behaviour matches fixture profiles.
     return FixturePatientDataProvider()
 
 
